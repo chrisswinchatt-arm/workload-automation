@@ -108,23 +108,34 @@ public class UiAutomation extends BaseUiAutomation implements ApplaunchInterface
         return launchEndObject;
     }
 
+    private void clickObject(String objectId, String className) throws Exception {
+        UiObject object = mDevice.findObject(new UiSelector().resourceId(packageID + objectId).className(className));
+        object.click();
+    }
+
+    private void clickObjectIfExists(String objectId, String className) throws Exception {
+        UiObject object = mDevice.findObject(new UiSelector().resourceId(packageID + objectId).className(className));
+        if (object.exists()) {
+            object.click();
+        }
+    }
+
+    private void clickObjectIfExistsWithin(String objectId, String className, long millis) throws Exception {
+        UiObject object = mDevice.findObject(new UiSelector().resourceId(packageID + objectId).className(className));
+        if (object.waitForExists(millis)) {
+            object.click();
+        }
+    }
 
     private void dismissWelcomeView() throws Exception {
-
         //Close optional sign in screen on newer versions (19.4.0.9813)
-        UiObject closeWelcomeImage = mDevice.findObject(new UiSelector().resourceId(packageID + "optional_signing_cross_button")
-            .className("android.widget.ImageView"));
-    	if (closeWelcomeImage.exists()) {
-    		closeWelcomeImage.click();
-    	}
-
+        clickObjectIfExists("close_button", "android.widget.ImageView");
+        // Skip privacy policy message
+        clickObjectIfExists("continue_button", "android.widget.Button");
+        // Skip trial
+        clickObjectIfExists("not_now_button", "android.widget.Button");
         // Deal with popup dialog message tutorial on newer versions
-        UiObject tutorialDialog = mDevice.findObject(new UiSelector().resourceId(packageID + "close_card_button")
-            .className("android.widget.ImageButton"));
-
-        if (tutorialDialog.waitForExists(TimeUnit.SECONDS.toMillis(3))) {
-                tutorialDialog.click();
-        }
+        clickObjectIfExistsWithin("close_card_button", "android.widget.ImageButton", TimeUnit.SECONDS.toMillis(3));
 
         //Check to see if app is on home screen
         if (mDevice.findObject(new UiSelector().textContains("Home")).exists()) {
@@ -172,11 +183,12 @@ public class UiAutomation extends BaseUiAutomation implements ApplaunchInterface
     private void openFile(final String filename) throws Exception {
         String testTag = "open_document";
         ActionLogger logger = new ActionLogger(testTag, parameters);
-        
+
         UiObject fileObject = findFileObject(filename);
         logger.start();
 
         fileObject.clickAndWaitForNewWindow(uiAutoTimeout);
+
         // Wait for the doc to open by waiting for the viewPager UiObject to exist
         UiObject viewPager =
                 mDevice.findObject(new UiSelector().resourceId(packageID + "viewPager"));
@@ -185,12 +197,15 @@ public class UiAutomation extends BaseUiAutomation implements ApplaunchInterface
         };
 
         logger.stop();
+
+        clickObjectIfExists("nextButton", "android.widget.Button");
+        clickObjectIfExists("nextButton", "android.widget.Button");
     }
 
     private UiObject findFileObject(String filename) throws Exception {
         UiObject localFilesTab = mDevice.findObject(new UiSelector().textContains("LOCAL")
             .className("android.widget.TextView"));
-        
+
         // Support older versions
         if (localFilesTab.exists()) {
             localFilesTab.click();
@@ -229,7 +244,7 @@ public class UiAutomation extends BaseUiAutomation implements ApplaunchInterface
             .resourceIdMatches(packageID + "bottombaritem_search")
             .className("android.widget.FrameLayout"));
 
-        // On devices with larger screen sizes, layout is different 
+        // On devices with larger screen sizes, layout is different
         if(!searchNavigationButton.exists()) {
             searchNavigationButton = getUiObjectByResourceId(packageID + "search_button_home",
                                                              "android.widget.TextView");
@@ -239,8 +254,7 @@ public class UiAutomation extends BaseUiAutomation implements ApplaunchInterface
 
         UiObject searchBox =
                 mDevice.findObject(new UiSelector().resourceIdMatches(".*search_src_text")
-                                                   .classNameMatches("android.widget.EditText"));
-
+                                                   .classNameMatches("android.widget.(AutoCompleteTextView|EditText)"));
         searchBox.click();
         searchBox.setText(filename);
         mDevice.pressEnter();
@@ -309,19 +323,12 @@ public class UiAutomation extends BaseUiAutomation implements ApplaunchInterface
         // Tap the centre to bring up the menu gui
         // Sometimes the first tap wont register, so check if search appears
         // and if not, tap again before continuing
-        tapDisplayCentre();
         UiObject searchIcon =
                 mDevice.findObject(new UiSelector().resourceId(packageID + "document_view_search_icon"));
-        if (!searchIcon.waitForExists(uiAutoTimeout)) {
+        while (!searchIcon.waitForExists(uiAutoTimeout)) {
             tapDisplayCentre();
-        }
-
-        if (!searchIcon.waitForExists(uiAutoTimeout)) {
             searchIcon =
-                    mDevice.findObject(new UiSelector().resourceId(packageID + "document_view_search"));
-            if (!searchIcon.waitForExists(uiAutoTimeout)) {
-                tapDisplayCentre();
-            }
+                mDevice.findObject(new UiSelector().resourceId(packageID + "document_view_search_icon"));
         }
 
         for (int i = 0; i < searchStrings.length; i++) {
@@ -334,7 +341,7 @@ public class UiAutomation extends BaseUiAutomation implements ApplaunchInterface
 
             UiObject searchBox =
                     mDevice.findObject(new UiSelector().resourceIdMatches(".*search_src_text")
-                                                       .className("android.widget.EditText"));
+                                                       .classNameMatches("android.widget.(AutoCompleteTextView|EditText)"));
 
             searchBox.setText(searchStrings[i]);
 

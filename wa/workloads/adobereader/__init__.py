@@ -66,9 +66,10 @@ class AdobeReader(ApkUiautoWorkload):
     def __init__(self, target, **kwargs):
         super(AdobeReader, self).__init__(target, **kwargs)
         self.deployable_assets = [self.document_name]
-        self.asset_directory = self.target.path.join(self.target.external_storage,
-                                                     'Android', 'data',
-                                                     'com.adobe.reader', 'files')
+        self.asset_directory = '/storage/emulated/0/devlib-target'
+        #self.asset_directory = self.target.path.join(self.target.external_storage,
+                                                    #  'Android', 'data',
+                                                    #  'com.adobe.reader', 'files')
 
     def init_resources(self, context):
         super(AdobeReader, self).init_resources(context)
