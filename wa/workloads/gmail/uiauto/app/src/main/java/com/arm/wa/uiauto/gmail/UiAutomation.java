@@ -31,6 +31,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
@@ -200,6 +202,7 @@ public class UiAutomation extends BaseUiAutomation implements ApplaunchInterface
         if(!conversationView.exists()) {
            mDevice.pressBack();
         }
+        sleep(1);
     }
 
     public void clickNewMail() throws Exception {
@@ -212,6 +215,22 @@ public class UiAutomation extends BaseUiAutomation implements ApplaunchInterface
         logger.start();
         newMailButton.clickAndWaitForNewWindow(uiAutoTimeout);
         logger.stop();
+    }
+
+    public void toggleGridList() throws Exception {
+        Map<String, String> gridListButtons = new HashMap<String, String>() {{
+            put("com.android.documentsui:id/menu_list", "android.widget.TextView");
+            put("com.android.documentsui:id/sub_menu_list", "android.widget.Button");
+            put("com.android.documentsui:id/sub_menu_grid", "android.widget.Button");
+        }};
+
+        for (Map.Entry<String, String> entry : gridListButtons.entrySet()) {
+            UiObject button = mDevice.findObject(new UiSelector().resourceId(entry.getKey()).className(entry.getValue()));
+            if (button.exists()) {
+                button.click();
+                break;
+            }
+        }
     }
 
     public void attachImage() throws Exception {
@@ -234,60 +253,68 @@ public class UiAutomation extends BaseUiAutomation implements ApplaunchInterface
         }
         attachFile.clickAndWaitForNewWindow(uiAutoTimeout);
 
-        // Show Roots menu
-        UiObject rootMenu =
-            mDevice.findObject(new UiSelector().descriptionContains("Show root"));
-        if (rootMenu.exists()){
-            rootMenu.click();
-        }
-
-        UiObject imagesEntry =
-            mDevice.findObject(new UiSelector().textContains("Images")
-                                               .className("android.widget.TextView"));
-        if (imagesEntry.waitForExists(uiAutoTimeout)) {
-            imagesEntry.click();
-
-            selectGalleryFolder(workdir_name);
-            selectGalleryFolder(workdir_name);
-
-            //Switch from grid view to menu view to display filename on larger screens
-            UiObject menuListButton = mDevice.findObject(new UiSelector().resourceId("com.android.documentsui:id/menu_list")
-                                                                         .className("android.widget.TextView"));
-            if (menuListButton.exists()) {
-                menuListButton.click();
-            }
+        // Target folder may be cached
+        UiObject breadcrumb =
+            mDevice.findObject(new UiSelector().resourceId("com.google.android.documentsui:id/breadcrumb_text")
+                                            .text("devlib-target"));
+        if (breadcrumb.exists()) {
+            toggleGridList();
 
             UiObject imageButton = mDevice.findObject(new UiSelector().textContains(test_image)
-                                                                      .className("android.widget.TextView"));
+                                                                    .className("android.widget.TextView"));
 
             imageButton.click();
             imageButton.waitUntilGone(uiAutoTimeout);
-        } else { // Use google photos as fallback
-            UiObject photos =
-                mDevice.findObject(new UiSelector().text("Photos")
-                                                   .className("android.widget.TextView"));
+        } else {
+            // Show Roots menu
+            UiObject rootMenu =
+                mDevice.findObject(new UiSelector().descriptionContains("Show root"));
+            rootMenu.waitForExists(uiAutoTimeout);
+            rootMenu.click();
 
-            photos.click();
+            UiObject imagesEntry =
+                mDevice.findObject(new UiSelector().textContains("Images")
+                                                .className("android.widget.TextView"));
+            if (imagesEntry.waitForExists(uiAutoTimeout)) {
+                imagesEntry.click();
 
-            UiObject working_directory =
-                mDevice.findObject(new UiSelector().textContains(workdir_name)
-                                                   .className("android.widget.TextView"));
+                selectGalleryFolder(workdir_name);
+                selectGalleryFolder(workdir_name);
 
-            working_directory.waitForExists (uiAutoTimeout);
-            working_directory.click();
+                toggleGridList();
 
-            //Click test image
-            UiObject imageFileButton =
-                mDevice.findObject(new UiSelector().descriptionContains("Photo"));
+                UiObject imageButton = mDevice.findObject(new UiSelector().textContains(test_image)
+                                                                        .className("android.widget.TextView"));
 
-            imageFileButton.click();
+                imageButton.click();
+                imageButton.waitUntilGone(uiAutoTimeout);
+            } else { // Use google photos as fallback
+                UiObject photos =
+                    mDevice.findObject(new UiSelector().text("Photos")
+                                                    .className("android.widget.TextView"));
 
-            UiObject accept = getUiObjectByText("DONE");
+                photos.click();
 
-            if (accept.waitForExists (uiAutoTimeout)) {
-                accept.click();
+                UiObject working_directory =
+                    mDevice.findObject(new UiSelector().textContains(workdir_name)
+                                                    .className("android.widget.TextView"));
+
+                working_directory.waitForExists (uiAutoTimeout);
+                working_directory.click();
+
+                //Click test image
+                UiObject imageFileButton =
+                    mDevice.findObject(new UiSelector().descriptionContains("Photo"));
+
+                imageFileButton.click();
+
+                UiObject accept = getUiObjectByText("DONE");
+
+                if (accept.waitForExists (uiAutoTimeout)) {
+                    accept.click();
+                }
+
             }
-
         }
 
         logger.stop();
