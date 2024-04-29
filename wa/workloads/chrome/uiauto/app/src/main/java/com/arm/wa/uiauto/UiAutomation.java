@@ -86,6 +86,10 @@ public class UiAutomation extends BaseUiAutomation implements ApplaunchInterface
             // Click the New Tab button
             newTab = mDevice.findObject(new UiSelector().resourceId(packageID + "new_tab_button")
                                                         .className("android.widget.Button"));
+            if (!newTab.exists()) {
+                newTab = mDevice.findObject(new UiSelector().resourceId(packageID + "new_tab_view")
+                                                            .className("android.widget.LinearLayout"));
+            }
             newTab.clickAndWaitForNewWindow(uiAutoTimeout);
         }
         // Support Tablet devices which do not have tab switcher
@@ -97,12 +101,6 @@ public class UiAutomation extends BaseUiAutomation implements ApplaunchInterface
                                                         .textContains("New tab"));
             newTab.click();
         }
-    }
-
-    public void followTextLink(String text) throws Exception {
-        UiObject link = mDevice.findObject(new UiSelector().text(text).clickable(true));
-        link.waitForExists(uiAutoTimeout);
-        link.clickAndWaitForNewWindow();
     }
 
     @Test
@@ -127,7 +125,6 @@ public class UiAutomation extends BaseUiAutomation implements ApplaunchInterface
         newTab();
         navigateToPage("https://en.m.wikipedia.org/wiki/California", true);
         sleep(2);
-        followTextLink("United States");
         uiDeviceSwipeDown(50);
         sleep(1);
         uiDeviceSwipeUp(10);
@@ -154,20 +151,44 @@ public class UiAutomation extends BaseUiAutomation implements ApplaunchInterface
     }
 
     public void runApplicationSetup() throws Exception {
-        UiObject sendReportBox;
+        UiObject sendReportBox, signinButton, adPrivacyButton, gotItButton;
         UiObject acceptButton, noThanksButton;
+
+        signinButton = mDevice.findObject(new UiSelector().resourceId(packageID + "signin_fre_dismiss_button")
+                                                          .className("android.widget.Button"));
+        if (signinButton.exists()) {
+            signinButton.clickAndWaitForNewWindow(uiAutoTimeout);
+        }
+
+        adPrivacyButton = mDevice.findObject(new UiSelector().resourceId(packageID + "no_button")
+                                                          .className("android.widget.Button"));
+        if (adPrivacyButton.exists()) {
+            adPrivacyButton.clickAndWaitForNewWindow(uiAutoTimeout);
+        }
+
+        gotItButton = mDevice.findObject(new UiSelector().resourceId(packageID + "ack_button")
+                                                          .className("android.widget.Button"));
+        if (gotItButton.waitForExists(uiAutoTimeout)) {
+            gotItButton.click();
+        }
 
         sendReportBox = mDevice.findObject(new UiSelector().resourceId(packageID + "send_report_checkbox")
                                                            .className("android.widget.CheckBox"));
-        sendReportBox.click();
+        if (sendReportBox.exists()) {
+            sendReportBox.click();
+        }
 
         acceptButton = mDevice.findObject(new UiSelector().resourceId(packageID + "terms_accept")
                                                           .className("android.widget.Button"));
-        acceptButton.clickAndWaitForNewWindow(uiAutoTimeout);
+        if (acceptButton.exists()) {
+            acceptButton.clickAndWaitForNewWindow(uiAutoTimeout);
+        }
 
         noThanksButton = mDevice.findObject(new UiSelector().resourceId(packageID + "negative_button")
                                                             .className("android.widget.Button"));
-        noThanksButton.clickAndWaitForNewWindow(uiAutoTimeout);
+        if (noThanksButton.exists()) {
+            noThanksButton.clickAndWaitForNewWindow(uiAutoTimeout);
+        }
     }
 
     public UiObject getLaunchEndObject() {
