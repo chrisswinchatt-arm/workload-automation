@@ -69,7 +69,7 @@ public class UiAutomation extends BaseUiAutomation {
         dismissLocationTutorial();
         sleep(3);
 
-        /** On newer version the location info at bottom of screen interferes with swiping tests so remove by 
+        /** On newer version the location info at bottom of screen interferes with swiping tests so remove by
         swiping down. Check if new version by seeing if view switcher is present **/
         UiObject viewSwitcher =
             mDevice.findObject(new UiSelector().className("android.widget.ViewSwitcher"));
@@ -78,7 +78,7 @@ public class UiAutomation extends BaseUiAutomation {
 
         if(!viewSwitcher.exists()) { // Version 10.19.1
             cambridgeTextView.dragTo(0,getDisplayHeight(), 40);
-        } 
+        }
 
         // Pinch to zoom, scroll around
         UiObject mapContainer = mDevice.findObject(new UiSelector().resourceId(packageID + "mainmap_container"));
@@ -100,7 +100,14 @@ public class UiAutomation extends BaseUiAutomation {
 
         // Get directions from Cambridge train station to Corpus Christi college
         getDirectionsFromLocation();
-        search("Corpus Christi, Cambridge, England", "directions_startpoint_textbox");
+        UiObject startLocation = mDevice.findObject(new UiSelector().className("android.widget.TextView")
+                                                                    .descriptionContains("Start location"));
+        if (startLocation.exists()) {
+            startLocation.click();
+            search("Corpus Christi, Cambridge, England", "search_omnibox_edit_text");
+        } else {
+            search("Corpus Christi, Cambridge, England", "directions_startpoint_textbox");
+        }
         selectSearchResultContaining("Corpus Christi College");
         sleep(3);
 
@@ -162,13 +169,21 @@ public class UiAutomation extends BaseUiAutomation {
     public void viewRouteSteps() throws Exception {
         UiObject steps = mDevice.findObject(new UiSelector().textContains("STEPS & MORE")
                                                             .className("android.widget.TextView"));
-        if (steps.exists()){
-            steps.clickAndWaitForNewWindow(uiAutoTimeout);
+        if (!steps.exists()) {
+            steps = mDevice.findObject(new UiSelector().descriptionContains("Steps")
+                                                       .className("android.widget.Button"));
         }
+
+        steps.clickAndWaitForNewWindow(uiAutoTimeout);
     }
 
     public void previewRoute() throws Exception {
         UiObject preview = mDevice.findObject(new UiSelector().resourceId(packageID + "start_button"));
+        if (!preview.exists()) {
+            preview = mDevice.findObject(new UiSelector().descriptionContains("Preview")
+                                                         .className("android.widget.Button"));
+        }
+
         preview.clickAndWaitForNewWindow(uiAutoTimeout);
     }
 
