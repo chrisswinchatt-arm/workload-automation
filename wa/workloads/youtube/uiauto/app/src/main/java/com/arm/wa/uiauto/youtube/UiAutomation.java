@@ -42,6 +42,7 @@ public class UiAutomation extends BaseUiAutomation {
     public static final String SOURCE_TRENDING = "trending";
 
     public static final int WAIT_TIMEOUT_1SEC = 1000;
+    public static final int WAIT_TIMEOUT_3SEC = 3000;
     public static final int VIDEO_SLEEP_SECONDS = 3;
     public static final int LIST_SWIPE_COUNT = 5;
 
@@ -96,14 +97,14 @@ public class UiAutomation extends BaseUiAutomation {
             mDevice.findObject(new UiSelector().textContains("Later")
                                                .className("android.widget.TextView"));
         if (laterButton.waitForExists(WAIT_TIMEOUT_1SEC)) {
-           laterButton.click();
-       }
+            laterButton.click();
+        }
 
         UiObject cancelButton =
             mDevice.findObject(new UiSelector().textContains("Cancel")
                                                .className("android.widget.Button"));
-       if (cancelButton.waitForExists(WAIT_TIMEOUT_1SEC)) {
-        cancelButton.click();
+        if (cancelButton.waitForExists(WAIT_TIMEOUT_1SEC)) {
+            cancelButton.click();
         }
 
         UiObject skipButton =
@@ -122,14 +123,45 @@ public class UiAutomation extends BaseUiAutomation {
     }
 
     public void disableAutoplay() throws Exception {
+        // In more recent versions the first card is an ad and clicking "More options" takes us to Ad Centre.
+        // We can bypass this by going to Settings via the user page. There are two layouts to consider, one where there
+        // is a You button at the bottom of the screen, and one with the user's avatar at the top of the screen.
+        // The same version of YouTube is capable of rendering both layouts and decides based on some variable :-)
+        UiObject you = mDevice.findObject(new UiSelector().className("android.widget.Button")
+                                                          .textContains("Close"));
+        UiObject avatar = mDevice.findObject(new UiSelector().resourceId(packageID + "mobile_topbar_avatar"));
+        if (you.exists() || avatar.exists()) {
+            if (you.exists()) {
+                you.clickAndWaitForNewWindow();
+            } else {
+                avatar.clickAndWaitForNewWindow();
+            }
+
+            clickUiObject(BY_TEXT, "Settings", true);
+            clickUiObject(BY_TEXT, "General", true);
+
+            // Disable videos autoplaying in the feed.
+            clickUiObject(BY_TEXT, "Playback in feeds");
+            clickUiObject(BY_TEXT, "Off");
+            mDevice.pressBack();
+
+            // Disable autoplaying the next video when current one ends.
+            clickUiObject(BY_TEXT, "Autoplay");
+            clickUiObject(BY_TEXT, "Mobile phone/tablet");
+            mDevice.pressBack();
+
+            mDevice.pressBack();
+            return;
+        }
+
         UiObject moreoptions =
             mDevice.findObject(new UiSelector().descriptionContains("More options"));
         if (moreoptions.exists()) {
             moreoptions.click();
-        }
-        else {
+        } else {
             clickUiObject(BY_DESC, "Account");
         }
+
         clickUiObject(BY_TEXT, "Settings", true);
         clickUiObject(BY_TEXT, "General", true);
 
@@ -159,6 +191,15 @@ public class UiAutomation extends BaseUiAutomation {
         firstVideo.clickAndWaitForNewWindow();
     }
 
+    private void playMatchingVideo(String searchTerm) throws Exception {
+        UiObject resultsList =
+                mDevice.findObject(new UiSelector().resourceId(packageID + "results"));
+        UiObject matchingVideo =
+                resultsList.getFromParent(new UiSelector().descriptionContains(searchTerm)
+                                                          .clickable(true));
+        matchingVideo.clickAndWaitForNewWindow();
+    }
+
     public void testPlayVideo(String source, String searchTerm) throws Exception {
         String testTag = "play";
         ActionLogger logger = new ActionLogger(testTag + "_" + source, parameters);
@@ -176,7 +217,8 @@ public class UiAutomation extends BaseUiAutomation {
             if (matchedVideo.exists()) {
                 matchedVideo.clickAndWaitForNewWindow();
             } else {
-                playFirstVideo();
+                // YouTube now likes to place ads first in search, so we should match on the search text.
+                playMatchingVideo(searchTerm);
             }
             logger.stop();
 
@@ -234,11 +276,18 @@ public class UiAutomation extends BaseUiAutomation {
     }
 
     public void pausePlayVideo() throws Exception {
+        // Display controls.
         UiObject player = getUiObjectByResourceId(packageID + "player_fragment_container");
         sleep(VIDEO_SLEEP_SECONDS);
-        repeatClickUiObject(player, 2, 100);
-        sleep(1); // pause the video momentarily
         player.click();
+
+        // Pause video.
+        UiObject play_pause = getUiObjectByResourceId(packageID + "player_control_play_pause_replay_button");
+        play_pause.click();
+        sleep(1);
+
+        // Unpause.
+        play_pause.click();
         sleep(VIDEO_SLEEP_SECONDS);
     }
 

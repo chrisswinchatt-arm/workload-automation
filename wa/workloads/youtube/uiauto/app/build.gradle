@@ -3,12 +3,11 @@ apply plugin: 'com.android.application'
 def packageName = "com.arm.wa.uiauto.youtube"
 
 android {
-    compileSdkVersion 28
-    buildToolsVersion "28.0.3"
+    compileSdkVersion 29
     defaultConfig {
         applicationId "${packageName}"
         minSdkVersion 18
-        targetSdkVersion 28
+        targetSdkVersion 29
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -21,11 +20,11 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.android.support.test:runner:0.5'
-    compile 'com.android.support.test:rules:0.5'
-    compile 'com.android.support.test.uiautomator:uiautomator-v18:2.1.2'
-    compile(name: 'uiauto', ext:'aar')
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.android.support.test:runner:0.5'
+    implementation 'com.android.support.test:rules:0.5'
+    implementation 'com.android.support.test.uiautomator:uiautomator-v18:2.1.2'
+    implementation(name: 'uiauto', ext:'aar')
 }
 
 repositories {
